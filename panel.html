@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İrem İnşaat - Yönetici Paneli</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background-color: #f4f6f9; color: #333; }
+        
+        /* Üst Menü */
+        header {
+            background-color: #0072bc;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header-left { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 18px; }
+        .header-right { display: flex; align-items: center; gap: 15px; font-size: 14px; }
+        
+        .action-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .action-btn:hover { background-color: #218838; }
+
+        .logout-btn { color: white; text-decoration: none; border: 1px solid rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 3px; font-size: 12px; }
+        .logout-btn:hover { background: rgba(255,255,255,0.1); }
+
+        /* İçerik Alanı */
+        .container { padding: 30px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f4f6f9; padding-bottom: 8px; }
+        .card-header-flex h3 { font-size: 16px; color: #0072bc; border: none; padding: 0; margin: 0; }
+        
+        /* Tablo Stili */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+        th { background-color: #f9f9f9; color: #555; }
+        
+        .clickable-row { cursor: pointer; transition: background 0.2s; }
+        .clickable-row:hover { background-color: #f1f8ff; }
+        
+        .full-width { grid-column: span 2; }
+
+        /* Modal Pencereleri */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 5px;
+            width: 400px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 { margin-bottom: 15px; color: #0072bc; font-size: 16px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #555; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 13px; }
+        .modal-buttons { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+        .modal-buttons-right { display: flex; gap: 10px; }
+        
+        .btn-save { background: #0072bc; color: white; border: none; padding: 8px 15px; border-radius: 3px; cursor: pointer; }
+        .btn-delete { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 3px; cursor: pointer; }
+        .btn-cancel { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 3px; cursor: pointer; }
+        .btn-small-danger { background: #dc3545; color: white; border: none; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <span style="background: white; color: #0072bc; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-style: italic; font-size: 14px;">İ</span>
+            İREM İNŞAAT
+        </div>
+        <div class="header-right">
+            <button class="action-btn" onclick="openModal('addModal')">+ Kullanıcı Tanımla</button>
+            <span>Hoşgeldiniz, Yönetici</span>
+            <a href="index.html" class="logout-btn">Çıkış Yap</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Sol Kolon: Projeler -->
+        <div>
+            <div class="card">
+                <div class="card-header-flex">
+                    <h3>Güncel Projeler</h3>
+                    <button class="action-btn" style="padding: 4px 8px; font-size: 11px;" onclick="openModal('addProjectModal')">+ Proje Ekle</button>
+                </div>
+                <table id="projectTable">
+                    <tr><th>Proje Adı</th><th>Konum</th><th>Durum</th><th style="width: 50px;">İşlem</th></tr>
+                    <tr class="project-row"><td>Konut Projesi - Blok A</td><td>İstanbul</td><td>Devam Ediyor (%75)</td><td><button class="btn-small-danger" onclick="deleteProject(this)">Sil</button></td></tr>
+                    <tr class="project-row"><td>Ticari Merkez İnşaatı</td><td>Ankara</td><td>Devam Ediyor (%40)</td><td><button class="btn-small-danger" onclick="deleteProject(this)">Sil</button></td></tr>
+                    <tr class="project-row"><td>Villa Kompleksi</td><td>Yalova</td><td>Tamamlandı (%100)</td><td><button class="btn-small-danger" onclick="deleteProject(this)">Sil</button></td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sağ Kolon: İstatistikler -->
+        <div>
+            <div class="card">
+                <h3>Genel İstatistikler</h3>
+                <p style="margin-bottom: 10px; font-size: 14px;"><b>Toplam Proje Sayısı:</b> <span id="totalProjectsCount">3</span></p>
+                <p style="margin-bottom: 10px; font-size: 14px;"><b>Aktif Saha Personeli:</b> 45</p>
+                <p style="font-size: 14px;"><b>Kayıtlı Kullanıcı Sayısı:</b> <span id="totalUsersCount">4</span></p>
+            </div>
+        </div>
+
+        <!-- Alt Alan: Kayıtlı Kullanıcılar Listesi -->
+        <div class="card full-width">
+            <h3>Kayıtlı Kullanıcılar (Düzenlemek için satıra tıklayın)</h3>
+            <table id="userTable">
+                <tr><th>Kullanıcı Adı</th><th>Ad Soyad</th><th>Yetki / Rol</th><th>Son Giriş Tarihi</th></tr>
+                <tr class="clickable-row" onclick="editUser(this)"><td>mehmetvar</td><td>Mehmet Var</td><td>Yönetici</td><td>11.09.2026 14:21</td></tr>
+                <tr class="clickable-row" onclick="editUser(this)"><td>yucelbey</td><td>Yücel Bey</td><td>Saha Sorumlusu</td><td>10.09.2026 09:15</td></tr>
+                <tr class="clickable-row" onclick="editUser(this)"><td>personel1</td><td>Ahmet Demir</td><td>Kullanıcı</td><td>08.09.2026 16:40</td></tr>
+                <tr class="clickable-row" onclick="editUser(this)"><td>mehmet.var</td><td>Mehmet var</td><td>Kullanıcı</td><td>11.09.2026 14:25</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Yeni Kullanıcı Tanımlama Modalı -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <h3>Yeni Kullanıcı Tanımla</h3>
+            <form id="addUserForm" onsubmit="saveNewUser(event)">
+                <div class="form-group">
+                    <label>Kullanıcı Adı</label>
+                    <input type="text" id="newUsername" required placeholder="örn: ahmet123">
+                </div>
+                <div class="form-group">
+                    <label>Ad Soyad</label>
+                    <input type="text" id="newFullname" required placeholder="örn: Ahmet Yılmaz">
+                </div>
+                <div class="form-group">
+                    <label>Şifre</label>
+                    <input type="password" id="newPassword" required placeholder="******">
+                </div>
+                <div class="form-group">
+                    <label>Yetki / Rol</label>
+                    <select id="newRole">
+                        <option value="Yönetici">Yönetici</option>
+                        <option value="Saha Sorumlusu">Saha Sorumlusu</option>
+                        <option value="Kullanıcı">Kullanıcı</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <div></div>
+                    <div class="modal-buttons-right">
+                        <button type="button" class="btn-cancel" onclick="closeModal('addModal')">İptal</button>
+                        <button type="submit" class="btn-save">Kaydet</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Yeni Proje Ekleme Modalı -->
+    <div class="modal" id="addProjectModal">
+        <div class="modal-content">
+            <h3>Yeni Proje Ekle</h3>
+            <form id="addProjectForm" onsubmit="saveNewProject(event)">
+                <div class="form-group">
+                    <label>Proje Adı</label>
+                    <input type="text" id="projName" required placeholder="örn: Fabrika İnşaatı">
+                </div>
+                <div class="form-group">
+                    <label>Konum</label>
+                    <input type="text" id="projLocation" required placeholder="örn: Bursa">
+                </div>
+                <div class="form-group">
+                    <label>Durum</label>
+                    <input type="text" id="projStatus" required placeholder="örn: Devam Ediyor (%10)">
+                </div>
+                <div class="modal-buttons">
+                    <div></div>
+                    <div class="modal-buttons-right">
+                        <button type="button" class="btn-cancel" onclick="closeModal('addProjectModal')">İptal</button>
+                        <button type="submit" class="btn-save">Ekle</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Kullanıcı Düzenleme / Yetki Verme Modalı -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h3>Kullanıcı Bilgileri ve Yetki Ayarları</h3>
+            <form id="editUserForm" onsubmit="updateUser(event)">
+                <input type="hidden" id="editRowIndex">
+                <div class="form-group">
+                    <label>Kullanıcı Adı</label>
+                    <input type="text" id="editUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Ad Soyad</label>
+                    <input type="text" id="editFullname" required>
+                </div>
+                <div class="form-group">
+                    <label>Şifre Değiştir</label>
+                    <input type="password" id="editPassword" placeholder="Yeni şifre (boş bırakılırsa değişmez)">
+                </div>
+                <div class="form-group">
+                    <label>Yetki / Rol</label>
+                    <select id="editRole">
+                        <option value="Yönetici">Yönetici</option>
+                        <option value="Saha Sorumlusu">Saha Sorumlusu</option>
+                        <option value="Kullanıcı">Kullanıcı</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-delete" onclick="deleteUser()">Kullanıcıyı Sil</button>
+                    <div class="modal-buttons-right">
+                        <button type="button" class="btn-cancel" onclick="closeModal('editModal')">İptal</button>
+                        <button type="submit" class="btn-save">Güncelle</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let selectedRow = null;
+
+        function updateCounts() {
+            const projectRows = document.querySelectorAll('.project-row');
+            document.getElementById('totalProjectsCount').innerText = projectRows.length;
+
+            const userRows = document.querySelectorAll('#userTable tr');
+            // Başlık satırı hariç kullanıcı sayısını al
+            document.getElementById('totalUsersCount').innerText = userRows.length - 1;
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            if(modalId === 'addModal') document.getElementById('addUserForm').reset();
+            if(modalId === 'addProjectModal') document.getElementById('addProjectForm').reset();
+        }
+
+        function saveNewUser(event) {
+            event.preventDefault();
+            const username = document.getElementById('newUsername').value;
+            const fullname = document.getElementById('newFullname').value;
+            const role = document.getElementById('newRole').value;
+            
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('tr-TR') + ' ' + now.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+
+            const table = document.getElementById('userTable');
+            const newRow = table.insertRow();
+            newRow.className = "clickable-row";
+            newRow.onclick = function() { editUser(this); };
+            
+            newRow.innerHTML = `<td>${username}</td><td>${fullname}</td><td>${role}</td><td>${dateStr}</td>`;
+
+            updateCounts();
+            alert("Kullanıcı başarıyla tanımlandı!");
+            closeModal('addModal');
+        }
+
+        function saveNewProject(event) {
+            event.preventDefault();
+            const name = document.getElementById('projName').value;
+            const location = document.getElementById('projLocation').value;
+            const status = document.getElementById('projStatus').value;
+
+            const table = document.getElementById('projectTable');
+            const newRow = table.insertRow();
+            newRow.className = "project-row";
+            
+            newRow.innerHTML = `<td>${name}</td><td>${location}</td><td>${status}</td><td><button class="btn-small-danger" onclick="deleteProject(this)">Sil</button></td>`;
+
+            updateCounts();
+            alert("Proje başarıyla eklendi!");
+            closeModal('addProjectModal');
+        }
+
+        function deleteProject(btn) {
+            event.stopPropagation();
+            if (confirm("Bu projeyi silmek istediğinize emin misiniz?")) {
+                const row = btn.parentNode.parentNode;
+                row.remove();
+                updateCounts();
+            }
+        }
+
+        function editUser(row) {
+            selectedRow = row;
+            document.getElementById('editUsername').value = row.cells[0].innerText;
+            document.getElementById('editFullname').value = row.cells[1].innerText;
+            document.getElementById('editRole').value = row.cells[2].innerText;
+            document.getElementById('editPassword').value = "";
+            
+            openModal('editModal');
+        }
+
+        function updateUser(event) {
+            event.preventDefault();
+            if (selectedRow) {
+                selectedRow.cells[0].innerText = document.getElementById('editUsername').value;
+                selectedRow.cells[1].innerText = document.getElementById('editFullname').value;
+                selectedRow.cells[2].innerText = document.getElementById('editRole').value;
+                
+                alert("Kullanıcı bilgileri güncellendi!");
+                closeModal('editModal');
+            }
+        }
+
+        function deleteUser() {
+            if (selectedRow && confirm("Bu kullanıcıyı silmek istediğinize emin misiniz?")) {
+                selectedRow.remove();
+                updateCounts();
+                alert("Kullanıcı sistemden silindi.");
+                closeModal('editModal');
+            }
+        }
+
+        // Sayfa ilk açıldığında sayıları hesapla
+        window.onload = function() {
+            updateCounts();
+        };
+    </script>
+
+</body>
+</html>

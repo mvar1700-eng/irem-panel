@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İrem İnşaat - Ödeme Listesi</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background-color: #f4f6f9; color: #333; }
+        
+        /* Üst Menü */
+        header {
+            background-color: #0072bc;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header-left { display: flex; align-items: center; gap: 20px; font-weight: bold; font-size: 18px; }
+        .header-left a { color: white; text-decoration: none; font-size: 14px; font-weight: normal; border-left: 1px solid rgba(255,255,255,0.4); padding-left: 15px; }
+        .header-left a:hover { text-decoration: underline; }
+        
+        .header-right { display: flex; align-items: center; gap: 15px; font-size: 14px; }
+        .action-btn { background-color: #28a745; color: white; border: nil; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 13px; font-weight: bold; border: none; }
+        .action-btn:hover { background-color: #218838; }
+
+        .logout-btn { color: white; text-decoration: none; border: 1px solid rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 3px; font-size: 12px; }
+        .logout-btn:hover { background: rgba(255,255,255,0.1); }
+
+        /* İçerik Alanı */
+        .container { padding: 30px; max-width: 100%; margin: 0 auto; overflow-x: auto; }
+        .card { background: white; padding: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card h3 { font-size: 16px; margin-bottom: 15px; color: #0072bc; border-bottom: 2px solid #f4f6f9; padding-bottom: 8px; }
+        
+        /* Tablo Stili */
+        table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+        th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee; border-right: 1px solid #f0f0f0; }
+        th { background-color: #ffeb3b; color: #333; font-weight: bold; text-align: center; }
+        
+        .btn-approve { background: #ffc107; color: #333; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .btn-approve:hover { background: #e0a800; }
+        
+        .status-select { padding: 4px; font-size: 12px; border-radius: 3px; border: 1px solid #ccc; font-weight: bold; }
+        
+        /* Modal Pencereleri */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 5px;
+            width: 450px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { margin-bottom: 15px; color: #0072bc; font-size: 16px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 11px; margin-bottom: 3px; color: #555; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
+        
+        .btn-save { background: #0072bc; color: white; border: none; padding: 8px 15px; border-radius: 3px; cursor: pointer; }
+        .btn-cancel { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 3px; cursor: pointer; }
+        .btn-small-danger { background: #dc3545; color: white; border: none; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="background: white; color: #0072bc; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-style: italic; font-size: 14px;">İ</span>
+                İREM İNŞAAT
+            </div>
+            <a href="panel.html">Ana Panel</a>
+        </div>
+        <div class="header-right">
+            <button class="action-btn" onclick="openModal()">+ Yeni Ödeme Ekle</button>
+            <span id="currentUserDisplay">Hoşgeldiniz, Mehmet Abi</span>
+            <a href="index.html" class="logout-btn">Çıkış Yap</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h3>Şirket Ödeme ve Onay Listesi</h3>
+            <table id="paymentTable">
+                <tr>
+                    <th>SATICI</th>
+                    <th>ALICI</th>
+                    <th>FATURA TARİHİ</th>
+                    <th>FATURA TUTARI</th>
+                    <th>İBAN</th>
+                    <th>VADE GÜN</th>
+                    <th>VADE KALAN GÜN</th>
+                    <th>AÇIKLAMA</th>
+                    <th>YÜKLEYEN ONAY</th>
+                    <th>GENEL MUHASEBE ONAY</th>
+                    <th>FİNANS ONAYLAYAN</th>
+                    <th>YÜCEL VAR ONAY</th>
+                    <th>DURUM</th>
+                    <th style="width: 50px;">İŞLEM</th>
+                </tr>
+                <tr>
+                    <td>ZEMAK MAKİNA</td>
+                    <td>İREM İNŞAAT</td>
+                    <td>01.09.2026</td>
+                    <td>31.000,00 TL</td>
+                    <td>TR420020500000675426800002</td>
+                    <td>7</td>
+                    <td>-3</td>
+                    <td>İSTANBUL KASTAMONU ARAÇ NAKLİYESİ</td>
+                    <td><button class="btn-approve" onclick="approveStep(this, 'Yükleyen')">Onayla</button></td>
+                    <td><button class="btn-approve" onclick="approveStep(this, 'Muhasebe')">Onayla</button></td>
+                    <td><button class="btn-approve" onclick="approveStep(this, 'Finans')">Onayla</button></td>
+                    <td><button class="btn-approve" onclick="approveStep(this, 'Yücel Var')">Onayla</button></td>
+                    <td>
+                        <select class="status-select" style="color: orange;">
+                            <option value="BEKLİYOR" selected>BEKLİYOR</option>
+                            <option value="ÖDENDİ">ÖDENDİ</option>
+                            <option value="ÖDENMEDİ">ÖDENMEDİ</option>
+                        </select>
+                    </td>
+                    <td><button class="btn-small-danger" onclick="deletePayment(this)">Sil</button></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Yeni Ödeme Ekleme Modalı -->
+    <div class="modal" id="addPaymentModal">
+        <div class="modal-content">
+            <h3>Yeni Ödeme / Fatura Ekle</h3>
+            <form id="addPaymentForm" onsubmit="savePayment(event)">
+                <div class="form-group"><label>Satıcı</label><input type="text" id="pSatici" required placeholder="örn: ZEMAK MAKİNA"></div>
+                
+                <div class="form-group">
+                    <label>Alıcı</label>
+                    <select id="pAlici" required>
+                        <option value="İREM İNŞAAT">İREM İNŞAAT</option>
+                        <option value="SANCAR İNŞAAT">SANCAR İNŞAAT</option>
+                        <option value="ALADAĞ İNŞAAT">ALADAĞ İNŞAAT</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Fatura Tarihi (Örn: 2/8 veya 01.09.2026)</label>
+                    <input type="text" id="pTarih" required placeholder="2/8" onblur="formatDateInput(this)">
+                </div>
+
+                <div class="form-group"><label>Fatura Tutarı</label><input type="text" id="pTutar" required placeholder="31.000,00 TL"></div>
+                
+                <div class="form-group">
+                    <label>İBAN (26 Haneli)</label>
+                    <input type="text" id="pIban" required placeholder="TR..." maxlength="26" oninput="checkIbanLength(this)">
+                    <small id="ibanWarning" style="color: red; font-size: 10px; display: none;">IBAN tam 26 karakter olmalıdır!</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Vade Gün</label>
+                    <input type="number" id="pVade" required placeholder="7" oninput="calculateDueDate()">
+                </div>
+
+                <div class="form-group">
+                    <label>Vade Kalan Gün (Otomatik)</label>
+                    <input type="text" id="pKalan" readonly style="background-color: #e9ecef;" placeholder="Otomatik hesaplanır">
+                </div>
+
+                <div class="form-group"><label>Açıklama</label><input type="text" id="pAciklama" required placeholder="Açıklama giriniz"></div>
+                
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">İptal</button>
+                    <button type="submit" class="btn-save">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Aktif kullanıcı simülasyonu (Giriş yapan kullanıcının adı/rolü)
+        // Gerçek sistemde oturum açan kullanıcı buraya dinamik olarak yazdırılır.
+        let activeUser = "Mehmet Abi (Yönetici)";
+
+        function openModal() {
+            document.getElementById('addPaymentModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('addPaymentModal').style.display = 'none';
+            document.getElementById('addPaymentForm').reset();
+            document.getElementById('ibanWarning').style.display = 'none';
+        }
+
+        // Excel tarzı tarih kısayolu (örn: 2/8 -> 02.08.2026)
+        function formatDateInput(input) {
+            let val = input.value.trim();
+            if (val.includes('/') || val.includes('.')) {
+                let parts = val.split(/[\/\.]/);
+                if (parts.length === 2) {
+                    let day = parts[0].padStart(2, '0');
+                    let month = parts[1].padStart(2, '0');
+                    let year = new Date().getFullYear();
+                    input.value = `${day}.${month}.${year}`;
+                    calculateDueDate();
+                }
+            }
+        }
+
+        // Vade Kalan Gün Hesaplama
+        function calculateDueDate() {
+            let tarihStr = document.getElementById('pTarih').value;
+            let vadeGun = parseInt(document.getElementById('pVade').value);
+
+            if (tarihStr && !isNaN(vadeGun)) {
+                let parts = tarihStr.split('.');
+                if (parts.length === 3) {
+                    let faturaTarihi = new Date(parts[2], parts[1] - 1, parts[0]);
+                    let vadeTarihi = new Date(faturaTarihi);
+                    vadeTarihi.setDate(faturaTarihi.getDate() + vadeGun);
+
+                    let bugun = new Date();
+                    bugun.setHours(0,0,0,0);
+
+                    let farkZaman = vadeTarihi - bugun;
+                    let kalanGun = Math.ceil(farkZaman / (1000 * 60 * 60 * 24));
+
+                    document.getElementById('pKalan').value = kalanGun;
+                }
+            }
+        }
+
+        // İBAN 26 hane kontrolü
+        function checkIbanLength(input) {
+            let warning = document.getElementById('ibanWarning');
+            if (input.value.length !== 26) {
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        // Oturum açan kullanıcının adıyla doğrudan onay verme
+        function approveStep(btn, role) {
+            let cell = btn.parentNode;
+            let tarih = new Date().toLocaleDateString('tr-TR');
+            cell.innerHTML = `<span style="color: green; font-weight: bold; font-size: 11px;">✔ ${activeUser}<br><span style="font-size:9px; color:#666;">(${tarih})</span></span>`;
+        }
+
+        function savePayment(event) {
+            event.preventDefault();
+            
+            let iban = document.getElementById('pIban').value;
+            if (iban.length !== 26) {
+                alert("Hata: IBAN tam 26 karakter olmalıdır!");
+                return;
+            }
+
+            const table = document.getElementById('paymentTable');
+            const newRow = table.insertRow();
+            
+            newRow.innerHTML = `
+                <td>${document.getElementById('pSatici').value}</td>
+                <td>${document.getElementById('pAlici').value}</td>
+                <td>${document.getElementById('pTarih').value}</td>
+                <td>${document.getElementById('pTutar').value}</td>
+                <td>${iban}</td>
+                <td>${document.getElementById('pVade').value}</td>
+                <td>${document.getElementById('pKalan').value}</td>
+                <td>${document.getElementById('pAciklama').value}</td>
+                <td><button class="btn-approve" onclick="approveStep(this, 'Yükleyen')">Onayla</button></td>
+                <td><button class="btn-approve" onclick="approveStep(this, 'Muhasebe')">Onayla</button></td>
+                <td><button class="btn-approve" onclick="approveStep(this, 'Finans')">Onayla</button></td>
+                <td><button class="btn-approve" onclick="approveStep(this, 'Yücel Var')">Onayla</button></td>
+                <td>
+                    <select class="status-select" style="color: orange;">
+                        <option value="BEKLİYOR" selected>BEKLİYOR</option>
+                        <option value="ÖDENDİ">ÖDENDİ</option>
+                        <option value="ÖDENMEDİ">ÖDENMEDİ</option>
+                    </select>
+                </td>
+                <td><button class="btn-small-danger" onclick="deletePayment(this)">Sil</button></td>
+            `;
+
+            alert("Kayıt başarıyla eklendi!");
+            closeModal();
+        }
+
+        function deletePayment(btn) {
+            if (confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
+                btn.parentNode.parentNode.remove();
+            }
+        }
+    </script>
+
+</body>
+</html>
