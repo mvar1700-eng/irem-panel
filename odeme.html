@@ -23,7 +23,7 @@
         .header-left a:hover { text-decoration: underline; }
         
         .header-right { display: flex; align-items: center; gap: 15px; font-size: 14px; }
-        .action-btn { background-color: #28a745; color: white; border: nil; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 13px; font-weight: bold; border: none; }
+        .action-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 13px; font-weight: bold; }
         .action-btn:hover { background-color: #218838; }
 
         .logout-btn { color: white; text-decoration: none; border: 1px solid rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 3px; font-size: 12px; }
@@ -111,28 +111,7 @@
                     <th>DURUM</th>
                     <th style="width: 50px;">İŞLEM</th>
                 </tr>
-                <tr>
-                    <td>ZEMAK MAKİNA</td>
-                    <td>İREM İNŞAAT</td>
-                    <td>01.09.2026</td>
-                    <td>31.000,00 TL</td>
-                    <td>TR420020500000675426800002</td>
-                    <td>7</td>
-                    <td>-3</td>
-                    <td>İSTANBUL KASTAMONU ARAÇ NAKLİYESİ</td>
-                    <td><button class="btn-approve" onclick="approveStep(this, 'Yükleyen')">Onayla</button></td>
-                    <td><button class="btn-approve" onclick="approveStep(this, 'Muhasebe')">Onayla</button></td>
-                    <td><button class="btn-approve" onclick="approveStep(this, 'Finans')">Onayla</button></td>
-                    <td><button class="btn-approve" onclick="approveStep(this, 'Yücel Var')">Onayla</button></td>
-                    <td>
-                        <select class="status-select" style="color: orange;">
-                            <option value="BEKLİYOR" selected>BEKLİYOR</option>
-                            <option value="ÖDENDİ">ÖDENDİ</option>
-                            <option value="ÖDENMEDİ">ÖDENMEDİ</option>
-                        </select>
-                    </td>
-                    <td><button class="btn-small-danger" onclick="deletePayment(this)">Sil</button></td>
-                </tr>
+                <!-- Veriler LocalStorage'dan dinamik olarak yüklenecek -->
             </table>
         </div>
     </div>
@@ -187,9 +166,96 @@
     </div>
 
     <script>
-        // Aktif kullanıcı simülasyonu (Giriş yapan kullanıcının adı/rolü)
-        // Gerçek sistemde oturum açan kullanıcı buraya dinamik olarak yazdırılır.
         let activeUser = "Mehmet Abi (Yönetici)";
+
+        // Varsayılan başlangıç verisi (İlk açılışta boş kalmasın diye)
+        let defaultPayments = [
+            {
+                satici: "ZEMAK MAKİNA",
+                alici: "İREM İNŞAAT",
+                tarih: "01.09.2026",
+                tutar: "31.000,00 TL",
+                iban: "TR420020500000675426800002",
+                vade: "7",
+                kalan: "-3",
+                aciklama: "İSTANBUL KASTAMONU ARAÇ NAKLİYESİ",
+                onay1: '<button class="btn-approve" onclick="approveStep(0, 8)">Onayla</button>',
+                onay2: '<button class="btn-approve" onclick="approveStep(0, 9)">Onayla</button>',
+                onay3: '<button class="btn-approve" onclick="approveStep(0, 10)">Onayla</button>',
+                onay4: '<button class="btn-approve" onclick="approveStep(0, 11)">Onayla</button>',
+                durum: "BEKLİYOR"
+            }
+        ];
+
+        // Sayfa açıldığında verileri yükle
+        window.onload = function() {
+            loadPayments();
+        };
+
+        function getStoredPayments() {
+            let data = localStorage.getItem('irem_odemeler');
+            if (!data) {
+                localStorage.setItem('irem_odemeler', JSON.stringify(defaultPayments));
+                return defaultPayments;
+            }
+            return JSON.parse(data);
+        }
+
+        function saveStoredPayments(payments) {
+            localStorage.setItem('irem_odemeler', JSON.stringify(payments));
+        }
+
+        function loadPayments() {
+            let payments = getStoredPayments();
+            let table = document.getElementById('paymentTable');
+            
+            // Başlık satırı hariç tabloyu temizle
+            let headerHTML = `
+                <tr>
+                    <th>SATICI</th>
+                    <th>ALICI</th>
+                    <th>FATURA TARİHİ</th>
+                    <th>FATURA TUTARI</th>
+                    <th>İBAN</th>
+                    <th>VADE GÜN</th>
+                    <th>VADE KALAN GÜN</th>
+                    <th>AÇIKLAMA</th>
+                    <th>YÜKLEYEN ONAY</th>
+                    <th>GENEL MUHASEBE ONAY</th>
+                    <th>FİNANS ONAYLAYAN</th>
+                    <th>YÜCEL VAR ONAY</th>
+                    <th>DURUM</th>
+                    <th style="width: 50px;">İŞLEM</th>
+                </tr>
+            `;
+            table.innerHTML = headerHTML;
+
+            payments.forEach((p, index) => {
+                let row = table.insertRow();
+                row.innerHTML = `
+                    <td>${p.satici}</td>
+                    <td>${p.alici}</td>
+                    <td>${p.tarih}</td>
+                    <td>${p.tutar}</td>
+                    <td>${p.iban}</td>
+                    <td>${p.vade}</td>
+                    <td>${p.kalan}</td>
+                    <td>${p.aciklama}</td>
+                    <td>${p.onay1}</td>
+                    <td>${p.onay2}</td>
+                    <td>${p.onay3}</td>
+                    <td>${p.onay4}</td>
+                    <td>
+                        <select class="status-select" style="color: ${p.durum === 'ÖDENDİ' ? 'green' : (p.durum === 'ÖDENMEDİ' ? 'red' : 'orange')};" onchange="updateStatus(${index}, this.value)">
+                            <option value="BEKLİYOR" ${p.durum === 'BEKLİYOR' ? 'selected' : ''}>BEKLİYOR</option>
+                            <option value="ÖDENDİ" ${p.durum === 'ÖDENDİ' ? 'selected' : ''}>ÖDENDİ</option>
+                            <option value="ÖDENMEDİ" ${p.durum === 'ÖDENMEDİ' ? 'selected' : ''}>ÖDENMEDİ</option>
+                        </select>
+                    </td>
+                    <td><button class="btn-small-danger" onclick="deletePayment(${index})">Sil</button></td>
+                `;
+            });
+        }
 
         function openModal() {
             document.getElementById('addPaymentModal').style.display = 'flex';
@@ -201,7 +267,6 @@
             document.getElementById('ibanWarning').style.display = 'none';
         }
 
-        // Excel tarzı tarih kısayolu (örn: 2/8 -> 02.08.2026)
         function formatDateInput(input) {
             let val = input.value.trim();
             if (val.includes('/') || val.includes('.')) {
@@ -216,7 +281,6 @@
             }
         }
 
-        // Vade Kalan Gün Hesaplama
         function calculateDueDate() {
             let tarihStr = document.getElementById('pTarih').value;
             let vadeGun = parseInt(document.getElementById('pVade').value);
@@ -239,7 +303,6 @@
             }
         }
 
-        // İBAN 26 hane kontrolü
         function checkIbanLength(input) {
             let warning = document.getElementById('ibanWarning');
             if (input.value.length !== 26) {
@@ -249,11 +312,24 @@
             }
         }
 
-        // Oturum açan kullanıcının adıyla doğrudan onay verme
-        function approveStep(btn, role) {
-            let cell = btn.parentNode;
+        function approveStep(rowIndex, colIndex) {
+            let payments = getStoredPayments();
             let tarih = new Date().toLocaleDateString('tr-TR');
-            cell.innerHTML = `<span style="color: green; font-weight: bold; font-size: 11px;">✔ ${activeUser}<br><span style="font-size:9px; color:#666;">(${tarih})</span></span>`;
+            let onayHtml = `<span style="color: green; font-weight: bold; font-size: 11px;">✔ ${activeUser}<br><span style="font-size:9px; color:#666;">(${tarih})</span></span>`;
+            
+            if (colIndex === 8) payments[rowIndex].onay1 = onayHtml;
+            if (colIndex === 9) payments[rowIndex].onay2 = onayHtml;
+            if (colIndex === 10) payments[rowIndex].onay3 = onayHtml;
+            if (colIndex === 11) payments[rowIndex].onay4 = onayHtml;
+
+            saveStoredPayments(payments);
+            loadPayments();
+        }
+
+        function updateStatus(rowIndex, statusVal) {
+            let payments = getStoredPayments();
+            payments[rowIndex].durum = statusVal;
+            saveStoredPayments(payments);
         }
 
         function savePayment(event) {
@@ -265,39 +341,39 @@
                 return;
             }
 
-            const table = document.getElementById('paymentTable');
-            const newRow = table.insertRow();
-            
-            newRow.innerHTML = `
-                <td>${document.getElementById('pSatici').value}</td>
-                <td>${document.getElementById('pAlici').value}</td>
-                <td>${document.getElementById('pTarih').value}</td>
-                <td>${document.getElementById('pTutar').value}</td>
-                <td>${iban}</td>
-                <td>${document.getElementById('pVade').value}</td>
-                <td>${document.getElementById('pKalan').value}</td>
-                <td>${document.getElementById('pAciklama').value}</td>
-                <td><button class="btn-approve" onclick="approveStep(this, 'Yükleyen')">Onayla</button></td>
-                <td><button class="btn-approve" onclick="approveStep(this, 'Muhasebe')">Onayla</button></td>
-                <td><button class="btn-approve" onclick="approveStep(this, 'Finans')">Onayla</button></td>
-                <td><button class="btn-approve" onclick="approveStep(this, 'Yücel Var')">Onayla</button></td>
-                <td>
-                    <select class="status-select" style="color: orange;">
-                        <option value="BEKLİYOR" selected>BEKLİYOR</option>
-                        <option value="ÖDENDİ">ÖDENDİ</option>
-                        <option value="ÖDENMEDİ">ÖDENMEDİ</option>
-                    </select>
-                </td>
-                <td><button class="btn-small-danger" onclick="deletePayment(this)">Sil</button></td>
-            `;
+            let payments = getStoredPayments();
+            let newIndex = payments.length;
+
+            let newRecord = {
+                satici: document.getElementById('pSatici').value,
+                alici: document.getElementById('pAlici').value,
+                tarih: document.getElementById('pTarih').value,
+                tutar: document.getElementById('pTutar').value,
+                iban: iban,
+                vade: document.getElementById('pVade').value,
+                kalan: document.getElementById('pKalan').value,
+                aciklama: document.getElementById('pAciklama').value,
+                onay1: `<button class="btn-approve" onclick="approveStep(${newIndex}, 8)">Onayla</button>`,
+                onay2: `<button class="btn-approve" onclick="approveStep(${newIndex}, 9)">Onayla</button>`,
+                onay3: `<button class="btn-approve" onclick="approveStep(${newIndex}, 10)">Onayla</button>`,
+                onay4: `<button class="btn-approve" onclick="approveStep(${newIndex}, 11)">Onayla</button>`,
+                durum: "BEKLİYOR"
+            };
+
+            payments.push(newRecord);
+            saveStoredPayments(payments);
+            loadPayments();
 
             alert("Kayıt başarıyla eklendi!");
             closeModal();
         }
 
-        function deletePayment(btn) {
+        function deletePayment(rowIndex) {
             if (confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
-                btn.parentNode.parentNode.remove();
+                let payments = getStoredPayments();
+                payments.splice(rowIndex, 1);
+                saveStoredPayments(payments);
+                loadPayments();
             }
         }
     </script>
